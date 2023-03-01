@@ -4,6 +4,8 @@ const API_KEY = "58e35953-53b7-465d-9b3c-392f53b159b6"
 const API_URL_POPULAR = "https://kinopoiskapiunofficial.tech/api/v2.2/films/top?type=TOP_100_POPULAR_FILMS&page=1"
 // поисковик от апи по кино
 const API_SEARCH_URL = "https://kinopoiskapiunofficial.tech/api/v2.1/films/search-by-keyword?keyword="
+// апи по id
+const API_ID = "https://kinopoiskapiunofficial.tech/api/v2.2/films/"
 // запуск по полученной ссылке от апи
 getMovies(API_URL_POPULAR);
 // создаем фун-цию с которой проходим авторизацию
@@ -57,6 +59,8 @@ function showMovies(data){
             ${movie.rating && `<div class="movie__average  movie__average--${getClassByRate(movie.rating)} ">${movie.rating}</div>`}            
         </div>
         `;
+        // создаем при клике открывающие модельное окно с передачей id фильма из массива
+        movieEl.addEventListener("click", () => openModal(movie.filmId))
         // добавляем полученоное в наш новый див
         moviesEl.appendChild(movieEl);
     });
@@ -79,3 +83,49 @@ form.addEventListener("submit", (e)=>{
         search.value = "";
     }
 })
+// создаем модальное окно
+const modalEL = document.querySelector(".modal")
+// создаем фун
+async function openModal(id ){
+    // создаем фитч для модалки меняем на нашу ссылку по id и добавляем плюс id для уточнения
+const resp = await fetch(API_ID + id, {
+    // у каждого запроса есть headers
+    headers:{
+        // по стандарту запрос
+        "Content-Type": "application/json",
+        // то что написано в документации мы передаем наш ключ
+        "X-API-KEY": API_KEY,
+    }
+});
+// полученое переводим в json то есть объект
+const respData = await resp.json();
+    modalEL.classList.add("modal--show")
+    // добавляем стоп скролинг
+    document.body.classList.add(".stop-scrolling")
+// с помощью инера мы добавляем карточку модала и также подставляем производные из массива от апи либо по ссыли от кинопоиска
+modalEL.innerHTML = `
+<div class="modal__card">
+<img class="modal__movie-backdrop" src="${respData.posterUrl}" alt="">
+<h2>
+  <span class="modal__movie-title">${respData.nameRu}</span>
+  <span class="modal__movie-release-year"> - ${respData.year}</span>
+</h2>
+<ul class="modal__movie-info">
+  <div class="loader"></div>
+  <li class="modal__movie-genre">Жанр - ${respData.genres.map((el) => `<span>${el.genre}</span>`)}</li>
+  ${respData.filmLength ? `<li class="modal__movie-runtime">Время - ${respData.filmLength} минут</li>` : ''}
+  <li >Сайт: <a class="modal__movie-site" href="${respData.webUrl}">${respData.webUrl}</a></li>
+  <li class="modal__movie-overview">Описание - ${respData.description}</li>
+</ul>
+<button type="button" class="modal__button-close">Закрыть</button>
+</div>
+`;
+// кнопка закрывающая окно
+const btnClose = document.querySelector(".modal__button-close")
+btnClose.addEventListener("click", ()=>closeModal())
+}
+// фун закрывающае модель окна
+function closeModal (){
+    modalEL.classList.remove("modal--show")
+    document.body.classList.remove(".stop-scrolling")
+}
